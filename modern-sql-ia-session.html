@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="widtth, initial-scale=1" />
       
-  <title>Modern SQL Development con IA — Guía Express (Caso: Mascotas)</title>
+  <title>Modern SQL Development con IA — Guía (Caso: Mascotas)</title>
   <style>
     :root{
       --bg:#0b1220;
@@ -56,23 +56,23 @@
   <div class="wrap">
     <header>
       <div>
-        <span class="badge">Guía Express · 60 minutos</span>
+        <span class="badge">Guía 60 minutos</span>
         <h1>Modern SQL Development con IA — Caso Mascotas 🐶🐱</h1>
         <div class="muted">VS Code + Extensión MSSQL + GitHub Copilot + .NET Minimal API + React</div>
       </div>
-      <div class="kpi muted"><span class="dot"></span>Lista para demo en vivo</div>
+      <div class="kpi muted"><span class="dot"></span></div>
     </header>
 
     <div class="grid cols-2">
       <nav class="card toc">
         <h3>Índice</h3>
-        <a href="#run">Run of Show (30’)</a>
-        <a href="#prep">1. Preparación (3’)</a>
-        <a href="#db">2. Base de datos (7’)</a>
-        <a href="#seed">3. Seed & consultas (3’)</a>
-        <a href="#api">4. Backend .NET Minimal API (9’)</a>
-        <a href="#ui">5. Frontend React (6’)</a>
-        <a href="#bonus">6. Bonus / Azure / ORM (opcional)</a>
+        <a href="#run">Agenda (60’)</a>
+        <a href="#prep">1. Preparación </a>
+        <a href="#db">2. Base de datos </a>
+        <a href="#seed">3. Seed & consultas </a>
+        <a href="#api">4. Backend .NET Minimal API </a>
+        <a href="#ui">5. Frontend React </a>
+        <a href="#bonus">6. Bonus / Azure / ORM </a>
         <a href="#troubleshoot">7. Troubleshooting rápido</a>
         <a href="#takeaways">8. Takeaways</a>
       </nav>
@@ -157,14 +157,20 @@ sudo apt-get install -y nodejs</code></pre>
 
 Asegúrese de que la virtualización de Rosetta está habilitada. Puede hacerlo en la configuración de Docker Desktop.
 
-        docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=MyStrongPassword123!" \
-  -p 1433:1433 --name sqlserver2022 -d mcr.microsoft.com/mssql/server:2022-latest
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=MyStrongPassword123!" -p 1433:1433 --name sqlserver2022 -d mcr.microsoft.com/mssql/server:2022-latest
+
+docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyPass123!" -p 1434:1433 --name csweek2025 -d mcr.microsoft.com/azure-sql-edge:latest
+
+User: sa
+Credential: MyPass123!
+
+Customizacion de puerto: 1434
 
 # Verificar que está corriendo
 docker ps
 
 # Cadena de conexión para Docker:
-# Server=localhost,1433;User Id=sa;Password=MyStrongPassword123!;TrustServerCertificate=True</code></pre>
+# Server=localhost,1434;User Id=sa;Password=MyPass123!;TrustServerCertificate=True</code></pre>
 
       <pre><button class="copy" onclick="copy('sql-local')">Copiar</button><code id="sql-local"># Opción 2: SQL Server Express (Windows)
 # Descargar desde: https://www.microsoft.com/en-us/sql-server/sql-server-downloads
@@ -264,7 +270,41 @@ If it doesn't exist, generate a CREATE DATABASE statement and switch context to 
     <section id="db" class="card">
       <h2>2. Base de datos (7’) — Caso Mascotas</h2>
       <p>Creamos la base y el esquema mínimo para <strong>dueños</strong>, <strong>mascotas</strong> y <strong>citas</strong>.</p>
+      <h3>2.0 Crear base y esquema</h3>
+      <pre><button class="copy" onclick="copy('sql1')">Copiar</button><code id="sql1">
+Generate a T-SQL script for SQL Server to create a new database named PetClinicAI 
+with a schema called clinic, and the following tables:
 
+1. Owners:
+   - OwnerId (INT, PK, identity)
+   - FullName (NVARCHAR(120), not null)
+   - Email (NVARCHAR(160), nullable)
+   - Phone (NVARCHAR(40), nullable)
+   - CreatedAt (DATETIME2, default current UTC time)
+
+2. Pets:
+   - PetId (INT, PK, identity)
+   - OwnerId (FK to Owners.OwnerId, not null)
+   - PetName (NVARCHAR(80), not null)
+   - Species (NVARCHAR(40), not null, check constraint for 'Dog', 'Cat', 'Other')
+   - Breed (NVARCHAR(80), nullable)
+   - BirthDate (DATE, nullable)
+   - IsNeutered (BIT, default 0)
+   - CreatedAt (DATETIME2, default current UTC time)
+
+3. Appointments:
+   - AppointmentId (INT, PK, identity)
+   - PetId (FK to Pets.PetId, not null)
+   - VisitDate (DATETIME2, not null)
+   - Reason (NVARCHAR(200), not null)
+   - Notes (NVARCHAR(400), nullable)
+   - Status (NVARCHAR(20), default 'Scheduled', check constraint for 'Scheduled', 'Completed', 'Cancelled')
+   - CreatedAt (DATETIME2, default current UTC time)
+
+Include appropriate indexes on foreign keys and commonly filtered columns like VisitDate.
+
+      </code>
+      </pre>
       <h3>2.1 Crear base y esquema</h3>
       <pre><button class="copy" onclick="copy('sql1')">Copiar</button><code id="sql1">-- 01-db.sql
 IF DB_ID('PetClinicAI') IS NULL
@@ -326,6 +366,30 @@ Explain trade-offs briefly.</code></pre>
 
     <section id="seed" class="card">
       <h2>3. Seed & consultas (3’)</h2>
+      <h3>3.0</h3>
+      <pre>
+        <code>
+          Generate T-SQL statements to insert seed data into the PetClinicAI database 
+with the following requirements:
+
+1. Insert at least 3 owners with realistic names, emails, and phone numbers.
+2. Insert at least 5 pets belonging to those owners:
+   - Use a mix of Dog, Cat, and Other species.
+   - Include realistic breeds and birth dates.
+   - Vary the IsNeutered flag.
+3. Insert at least 6 appointments for those pets:
+   - Some scheduled in the future, some already completed, and some cancelled.
+   - Provide realistic reasons and optional notes.
+
+After the INSERT statements, also write two useful queries:
+
+A) List the next 10 upcoming appointments with columns:
+   AppointmentId, VisitDate, Status, PetName, Species, OwnerName, Phone
+   ordered by VisitDate ascending.
+
+B) Count the number of pets per owner, including owners with zero pets.
+        </code>
+      </pre>
       <h3>3.1 Datos de prueba mínimos</h3>
       <pre><button class="copy" onclick="copy('sql3')">Copiar</button><code id="sql3">-- 02-seed.sql
 USE PetClinicAI;
@@ -346,6 +410,25 @@ VALUES (1, DATEADD(day, 1, SYSUTCDATETIME()), N'Vacunación',       NULL, N'Sche
        (3, DATEADD(day,-1, SYSUTCDATETIME()), N'Chequeo post-op',  N'Todo bien', N'Completed');</code></pre>
 
       <h3>3.2 Consulta útil (próximas citas)</h3>
+      <h3>Prompt</h3>
+      <pre>
+        <code>
+          Write a T-SQL query for SQL Server that returns the next 10 upcoming appointments 
+from the PetClinicAI database. 
+Join the clinic.Appointments table with clinic.Pets and clinic.Owners to include:
+
+- AppointmentId
+- VisitDate
+- Status
+- PetName
+- Species
+- OwnerName
+- Phone
+
+Only include appointments where VisitDate is greater than or equal to the current UTC date/time.
+Order the results by VisitDate ascending.
+        </code>
+      </pre>
       <pre><button class="copy" onclick="copy('sql4')">Copiar</button><code id="sql4">SELECT TOP (10)
   a.AppointmentId, a.VisitDate, a.Status,
   p.PetName, p.Species,
@@ -360,7 +443,35 @@ ORDER BY a.VisitDate ASC;</code></pre>
     <section id="api" class="card">
       <h2>4. Backend .NET Minimal API (9’)</h2>
       <p>API sencilla con <strong>Dapper</strong> para ir rápido. Endpoints clave: listar próximas citas, crear dueños/mascotas.</p>
+      <h3>4.0 Prompt</h3>
+      <pre>
+        <code>
+          Create a .NET 8 Minimal API project named PetClinicAI.API with the following requirements:
 
+1. Use Entity Framework Core with SQL Server provider.
+2. Connection string:
+   "Server=localhost,1434;Database=PetClinicAI;User ID=sa;Password=MyPass123!;Encrypt=true;TrustServerCertificate=true;"
+3. Define models:
+   - Owner (OwnerId, Name, Email, Phone)
+   - Pet (PetId, Name, Species, Breed, BirthDate, IsNeutered, OwnerId)
+   - Appointment (AppointmentId, PetId, VisitDate, Reason, Status, Notes)
+4. Configure DbContext with table names under schema "clinic".
+5. Implement API endpoints:
+   - GET /owners (list all owners)
+   - GET /owners/{id} (get owner by id with pets)
+   - POST /owners (create owner)
+   - GET /pets (list all pets with owner info)
+   - POST /pets (create pet)
+   - GET /appointments/upcoming (list upcoming appointments with pet and owner details)
+   - POST /appointments (create appointment)
+6. Enable Swagger.
+7. Use dependency injection for DbContext.
+8. Seed initial data on first run if database is empty.
+
+Return the complete Program.cs file with all necessary code, 
+including EF Core models and DbContext in the same file for simplicity.
+        </code>
+      </pre>
       <h3>4.1 Comandos de arranque</h3>
       <pre><button class="copy" onclick="copy('sh1')">Copiar</button><code id="sh1">dotnet new web -n PetClinicApi
 cd PetClinicApi
@@ -441,7 +552,30 @@ record Pet(int OwnerId, string PetName, string Species, string? Breed, DateTime?
     <section id="ui" class="card">
       <h2>5. Frontend React (6’)</h2>
       <p>Vite + fetch simple para mostrar próximas citas. Configuramos un <strong>proxy</strong> a la API para evitar CORS.</p>
+      <h3>5.0 Prompt</h3>
+      <pre>
+        <code>
+          Create a React 18 application named petclinicai-frontend that consumes the APIs from a .NET 8 Minimal API backend running at http://localhost:5000.
 
+Requirements:
+vite.config.js
+Ajusta al puerto real de tu API
+
+1. Use functional components and hooks (useState, useEffect).
+2. Create pages:
+   - OwnersPage: List all owners (GET /owners) and a form to add new owner (POST /owners).
+   - PetsPage: List all pets with owner info (GET /pets) and a form to add new pet (POST /pets).
+   - AppointmentsPage: List upcoming appointments (GET /appointments/upcoming) and a form to add new appointment (POST /appointments).
+3. Create a simple navigation menu to switch between pages.
+4. Use fetch API for HTTP requests.
+5. Include loading and error states for all fetch calls.
+6. Style minimally using CSS modules or inline styles (no CSS framework needed).
+7. Each form should reset after successful submission and refresh the list.
+8. AppointmentsPage should display pet name, species, owner name, phone, visit date, and status.
+9. Ensure the backend URL is stored in a configuration variable for easy change.
+10. Return complete code for App.js, OwnersPage.js, PetsPage.js, AppointmentsPage.js, and a basic index.js.
+        </code>
+      </pre>
       <h3>5.1 Crear proyecto</h3>
       <pre><button class="copy" onclick="copy('sh3')">Copiar</button><code id="sh3">npm create vite@latest petclinic-ui -- --template react
 cd petclinic-ui
