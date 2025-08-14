@@ -1,0 +1,576 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="widtth, initial-scale=1" />
+      
+  <title>Modern SQL Development con IA — Guía Express (Caso: Mascotas)</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel:#111a2b;
+      --ink:#e8eefc;
+      --muted:#a7b2c9;
+      --brand:#6aa8ff;
+      --accent:#25d0a2;
+      --warn:#ffb347;
+      --danger:#ff6b6b;
+      --code:#0d1117;
+      --card:#0f172a;
+      --border:#1f2a44;
+    }
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji";}
+    a{color:var(--brand);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:1100px;margin:0 auto;padding:28px 20px 100px}
+    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .badge{background:linear-gradient(90deg,var(--brand),var(--accent));color:#00131a;padding:8px 12px;border-radius:999px;font-weight:700;font-size:12px;letter-spacing:.04em;display:inline-block}
+    h1{font-size:28px;margin:6px 0 4px}
+    h2{margin-top:28px;font-size:22px;border-bottom:1px solid var(--border);padding-bottom:6px}
+    h3{margin-top:20px;font-size:18px}
+    .grid{display:grid;gap:16px}
+    .cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
+    .kpi{display:flex;gap:14px;align-items:center}
+    .kpi .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(37,208,162,.12)}
+    .muted{color:var(--muted)}
+    .pill{display:inline-block;border:1px solid var(--border);padding:6px 10px;border-radius:999px;margin:3px 6px 0 0;color:var(--muted);font-size:12px}
+    pre{background:var(--code);color:#e6edf3;border:1px solid #30363d;border-radius:12px;padding:14px;overflow:auto;position:relative}
+    code{font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:13px;line-height:1.45}
+    .copy{position:absolute;top:8px;right:8px;background:var(--panel);border:1px solid var(--border);color:var(--ink);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px}
+    .callout{border-left:4px solid var(--brand);background:#0c1628;border:1px solid var(--border);padding:12px 14px;border-radius:10px}
+    .timeline{display:flex;gap:8px;flex-wrap:wrap}
+    .timeline .seg{background:#0e1830;border:1px solid var(--border);border-radius:10px;padding:8px 10px}
+    .ok{color:var(--accent)} .warn{color:var(--warn)} .danger{color:var(--danger)}
+    .toc a{display:block;padding:6px 0;color:var(--muted)}
+    footer{margin-top:28px;color:var(--muted);font-size:12px}
+    .float-actions{position:fixed;bottom:18px;right:18px;display:flex;gap:10px}
+    .btn{background:var(--brand);color:#08111e;border:none;padding:10px 14px;border-radius:12px;font-weight:700;cursor:pointer}
+    .btn.secondary{background:#14213a;color:var(--ink);border:1px solid var(--border)}
+    .kbd{background:#0b1220;border:1px solid var(--border);padding:0 6px;border-radius:6px;font-family:ui-monospace,monospace}
+    .tag{font-size:12px;color:var(--muted);margin-left:6px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <span class="badge">Guía Express · 60 minutos</span>
+        <h1>Modern SQL Development con IA — Caso Mascotas 🐶🐱</h1>
+        <div class="muted">VS Code + Extensión MSSQL + GitHub Copilot + .NET Minimal API + React</div>
+      </div>
+      <div class="kpi muted"><span class="dot"></span>Lista para demo en vivo</div>
+    </header>
+
+    <div class="grid cols-2">
+      <nav class="card toc">
+        <h3>Índice</h3>
+        <a href="#run">Run of Show (30’)</a>
+        <a href="#prep">1. Preparación (3’)</a>
+        <a href="#db">2. Base de datos (7’)</a>
+        <a href="#seed">3. Seed & consultas (3’)</a>
+        <a href="#api">4. Backend .NET Minimal API (9’)</a>
+        <a href="#ui">5. Frontend React (6’)</a>
+        <a href="#bonus">6. Bonus / Azure / ORM (opcional)</a>
+        <a href="#troubleshoot">7. Troubleshooting rápido</a>
+        <a href="#takeaways">8. Takeaways</a>
+      </nav>
+
+      <section class="card">
+        <h3>Objetivo de la sesión</h3>
+        <p>Construir, en <strong>60 minutos</strong>, un flujo completo: <em>explorar → modelar → poblar → exponer API → consumir en UI</em> para un sistema de clínica veterinaria (<strong>PetClinicAI</strong>) usando IA como acelerador.</p>
+        <div class="timeline">
+          <div class="seg">Exploración con prompts</div>
+          <div class="seg">Modelado SQL</div>
+          <div class="seg">Datos de prueba</div>
+          <div class="seg">API REST</div>
+          <div class="seg">UI React</div>
+        </div>
+        <div class="pill">SQL Server</div><div class="pill">VS Code</div><div class="pill">MSSQL Ext</div><div class="pill">GitHub Copilot</div><div class="pill">.NET 8</div><div class="pill">React + Vite</div>
+      </section>
+    </div>
+
+    <section id="run" class="card">
+      <h2>Run of Show</h2>
+      <ul>
+        <li><strong>00:00–03:00</strong> — Preparación / conexión / explicación “Antes vs Ahora”.</li>
+        <li><strong>03:00–10:00</strong> — DB desde cero con IA (tablas + relaciones).</li>
+        <li><strong>10:00–13:00</strong> — Seed y consultas útiles.</li>
+        <li><strong>13:00–22:00</strong> — Backend minimal API listo (GET/POST básicos).</li>
+        <li><strong>22:00–28:00</strong> — Frontend React que consume la API.</li>
+        <li><strong>28:00–30:00</strong> — Cierre + 1–2 preguntas.</li>
+      </ul>
+      <div class="callout"><strong>Tip:</strong> Ten abiertos cuatro archivos vacíos: <span class="kbd">01-db.sql</span>, <span class="kbd">02-seed.sql</span>, <span class="kbd">Program.cs</span>, <span class="kbd">App.jsx</span>.</div>
+    </section>
+
+    <section id="prep" class="card">
+      <h2>1. Preparación (3')</h2>
+      
+      <h3>1.1 Requisitos de Software</h3>
+      <ul>
+        <li><strong>Visual Studio Code</strong> (última versión)</li>
+        <li><strong>SQL Server</strong> local, Docker o Azure SQL</li>
+        <li><strong>.NET 8 SDK</strong></li>
+        <li><strong>Node.js 20+</strong> con npm</li>
+      </ul>
+
+      <h3>1.2 Instalación de dependencias</h3>
+      
+      <h4>Verificar instalaciones existentes</h4>
+      <pre><button class="copy" onclick="copy('check1')">Copiar</button><code id="check1"># Verificar .NET
+dotnet --version
+
+# Verificar Node.js
+node --version
+npm --version
+
+# Verificar SQL Server (Windows)
+sqlcmd -S localhost -E -Q "SELECT @@VERSION"</code></pre>
+
+      <h4>Instalar .NET 8 SDK</h4>
+      <pre><button class="copy" onclick="copy('dotnet1')">Copiar</button><code id="dotnet1"># macOS (usando Homebrew)
+brew install --cask dotnet
+
+# Windows (usando winget)
+winget install Microsoft.DotNet.SDK.8
+
+# Linux (Ubuntu/Debian)
+wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb
+sudo dpkg -i packages-microsoft-prod.deb
+sudo apt-get update
+sudo apt-get install -y dotnet-sdk-8.0</code></pre>
+
+      <h4>Instalar Node.js</h4>
+      <pre><button class="copy" onclick="copy('node1')">Copiar</button><code id="node1"># macOS (usando Homebrew)
+brew install node
+
+# Windows (usando winget)
+winget install OpenJS.NodeJS
+
+# Linux (usando NodeSource)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs</code></pre>
+
+      <h4>SQL Server - Opciones de instalación</h4>
+      <pre><button class="copy" onclick="copy('sql-docker')">Copiar</button><code id="sql-docker"># Opción 1: SQL Server en Docker (Recomendado para desarrollo)
+
+Asegúrese de que la virtualización de Rosetta está habilitada. Puede hacerlo en la configuración de Docker Desktop.
+
+        docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=MyStrongPassword123!" \
+  -p 1433:1433 --name sqlserver2022 -d mcr.microsoft.com/mssql/server:2022-latest
+
+# Verificar que está corriendo
+docker ps
+
+# Cadena de conexión para Docker:
+# Server=localhost,1433;User Id=sa;Password=MyStrongPassword123!;TrustServerCertificate=True</code></pre>
+
+      <pre><button class="copy" onclick="copy('sql-local')">Copiar</button><code id="sql-local"># Opción 2: SQL Server Express (Windows)
+# Descargar desde: https://www.microsoft.com/en-us/sql-server/sql-server-downloads
+# Seleccionar "Express" y seguir el instalador
+
+# Opción 3: Azure SQL Database (Nube)
+# Crear desde Azure Portal: https://portal.azure.com
+# Servicio: "SQL Database" > "Create"</code></pre>
+
+      <h3>1.3 Extensiones de VS Code</h3>
+      
+      <h4>Instalación manual</h4>
+      <ul>
+        <li><strong>SQL Server (mssql)</strong> - ms-mssql.mssql</li>
+        <li><strong>GitHub Copilot</strong> - GitHub.copilot</li>
+        <li><strong>GitHub Copilot Chat</strong> - GitHub.copilot-chat</li>
+        <li><strong>C# Dev Kit</strong> - ms-dotnettools.csdevkit</li>
+        <li><strong>ES7+ React/Redux/React-Native snippets</strong> - dsznajder.es7-react-js-snippets</li>
+      </ul>
+
+      <h4>Instalación vía comandos</h4>
+      <pre><button class="copy" onclick="copy('ext1')">Copiar</button><code id="ext1"># Instalar extensiones esenciales
+code --install-extension ms-mssql.mssql
+code --install-extension GitHub.copilot
+code --install-extension GitHub.copilot-chat
+code --install-extension ms-dotnettools.csdevkit
+code --install-extension dsznajder.es7-react-js-snippets</code></pre>
+
+      <h4>Prompts para instalar extensiones</h4>
+      <pre><button class="copy" onclick="copy('p-ext1')">Copiar</button><code id="p-ext1">Install the following VS Code extensions for me: SQL Server (mssql), GitHub Copilot, GitHub Copilot Chat, and C# Dev Kit. Show me the commands to install them.</code></pre>
+
+      <pre><button class="copy" onclick="copy('p-ext2')">Copiar</button><code id="p-ext2">Help me configure the SQL Server extension in VS Code to connect to my local SQL Server instance. I need step-by-step instructions.</code></pre>
+
+      <h3>1.4 Configuración inicial</h3>
+      
+      <h4>Configurar conexión SQL Server</h4>
+      <div class="callout">
+        <strong>Pasos en VS Code:</strong><br>
+        1. <span class="kbd">Ctrl+Shift+P</span> → "MS SQL: Connect"<br>
+        2. Crear nuevo perfil de conexión<br>
+        3. Server: <code>localhost</code> (o <code>localhost,1433</code> para Docker)<br>
+        4. Database: <code>(default)</code><br>
+        5. Authentication: SQL Login o Windows Authentication<br>
+        6. Username/Password según tu configuración
+      </div>
+
+      <h4>Verificar GitHub Copilot</h4>
+      <pre><button class="copy" onclick="copy('copilot-check')">Copiar</button><code id="copilot-check"># Verificar estado de Copilot en VS Code
+# Ctrl+Shift+P → "GitHub Copilot: Check Status"
+# Debe mostrar "GitHub Copilot is ready to use"</code></pre>
+
+      <h3>1.5 Prompts de exploración inicial</h3>
+      <pre><button class="copy" onclick="copy('p1')">Copiar</button><code id="p1">List all the databases in my SQL Server and connect to the one named PetClinicAI if it exists.
+If it doesn't exist, generate a CREATE DATABASE statement and switch context to it.</code></pre>
+
+      <pre><button class="copy" onclick="copy('p2')">Copiar</button><code id="p2">List all tables and their columns (name, data type, nullability) in the current database, grouped by table.</code></pre>
+
+      <pre><button class="copy" onclick="copy('p-setup')">Copiar</button><code id="p-setup">Help me set up a complete development environment for building a .NET Web API with React frontend. I need to connect to SQL Server and use modern development practices.</code></pre>
+
+      <pre><button class="copy" onclick="copy('p-workspace')">Copiar</button><code id="p-workspace">Create a new workspace folder structure for a pet clinic application with separate folders for database scripts, .NET API, and React frontend. Include .gitignore files for each technology.</code></pre>
+
+      <h3>1.6 Estructura de proyecto recomendada</h3>
+      <pre><button class="copy" onclick="copy('folder-structure')">Copiar</button><code id="folder-structure">PetClinicAI/
+├── database/
+│   ├── 01-schema.sql
+│   ├── 02-seed.sql
+│   └── queries/
+├── api/
+│   ├── PetClinicApi/
+│   ├── PetClinicApi.sln
+│   └── README.md
+├── ui/
+│   ├── petclinic-ui/
+│   ├── package.json
+│   └── README.md
+└── docs/
+    └── README.md</code></pre>
+
+      <pre><button class="copy" onclick="copy('create-folders')">Copiar</button><code id="create-folders"># Crear estructura de carpetas
+mkdir -p PetClinicAI/{database/queries,api,ui,docs}
+cd PetClinicAI</code></pre>
+    </section>
+
+    <section id="prep" class="card">
+      <h2>1. Preparación (3’)</h2>
+      <ul>
+        <li>VS Code con <strong>Extensión MSSQL</strong> y <strong>GitHub Copilot</strong> habilitados.</li>
+        <li><strong>SQL Server</strong> local o Azure SQL listo.</li>
+        <li><strong>.NET 8 SDK</strong> y <strong>Node 20+</strong> instalados.</li>
+      </ul>
+      <h3>Prompts (Copilot) — Exploración rápida</h3>
+      <pre><button class="copy" onclick="copy('p1')">Copiar</button><code id="p1">List all the databases in my SQL Server and connect to the one named PetClinicAI if it exists.
+If it doesn't exist, generate a CREATE DATABASE statement and switch context to it.</code></pre>
+      <pre><button class="copy" onclick="copy('p2')">Copiar</button><code id="p2">List all tables and their columns (name, data type, nullability) in the current database, grouped by table.</code></pre>
+    </section>
+
+    <section id="db" class="card">
+      <h2>2. Base de datos (7’) — Caso Mascotas</h2>
+      <p>Creamos la base y el esquema mínimo para <strong>dueños</strong>, <strong>mascotas</strong> y <strong>citas</strong>.</p>
+
+      <h3>2.1 Crear base y esquema</h3>
+      <pre><button class="copy" onclick="copy('sql1')">Copiar</button><code id="sql1">-- 01-db.sql
+IF DB_ID('PetClinicAI') IS NULL
+  CREATE DATABASE PetClinicAI;
+GO
+USE PetClinicAI;
+GO
+
+-- Esquema base
+CREATE SCHEMA clinic AUTHORIZATION dbo;
+GO</code></pre>
+
+      <h3>2.2 Tablas y relaciones</h3>
+      <pre><button class="copy" onclick="copy('sql2')">Copiar</button><code id="sql2">-- Dueños
+CREATE TABLE clinic.Owners (
+  OwnerId       INT IDENTITY(1,1) PRIMARY KEY,
+  FullName      NVARCHAR(120) NOT NULL,
+  Email         NVARCHAR(160) NULL,
+  Phone         NVARCHAR(40)  NULL,
+  CreatedAt     DATETIME2(0)  NOT NULL DEFAULT SYSUTCDATETIME()
+);
+
+-- Mascotas
+CREATE TABLE clinic.Pets (
+  PetId         INT IDENTITY(1,1) PRIMARY KEY,
+  OwnerId       INT NOT NULL,
+  PetName       NVARCHAR(80) NOT NULL,
+  Species       NVARCHAR(40) NOT NULL CHECK (Species IN (N'Dog', N'Cat', N'Other')),
+  Breed         NVARCHAR(80) NULL,
+  BirthDate     DATE NULL,
+  IsNeutered    BIT  NOT NULL DEFAULT 0,
+  CreatedAt     DATETIME2(0) NOT NULL DEFAULT SYSUTCDATETIME(),
+  CONSTRAINT FK_Pets_Owners FOREIGN KEY (OwnerId) REFERENCES clinic.Owners(OwnerId)
+);
+
+-- Citas
+CREATE TABLE clinic.Appointments (
+  AppointmentId INT IDENTITY(1,1) PRIMARY KEY,
+  PetId         INT NOT NULL,
+  VisitDate     DATETIME2(0) NOT NULL,
+  Reason        NVARCHAR(200) NOT NULL,
+  Notes         NVARCHAR(400) NULL,
+  Status        NVARCHAR(20) NOT NULL DEFAULT N'Scheduled' CHECK (Status IN (N'Scheduled', N'Completed', N'Cancelled')),
+  CreatedAt     DATETIME2(0) NOT NULL DEFAULT SYSUTCDATETIME(),
+  CONSTRAINT FK_Appointments_Pets FOREIGN KEY (PetId) REFERENCES clinic.Pets(PetId)
+);
+
+-- Índices recomendados
+CREATE INDEX IX_Pets_OwnerId ON clinic.Pets(OwnerId);
+CREATE INDEX IX_Appointments_PetId ON clinic.Appointments(PetId);
+CREATE INDEX IX_Appointments_VisitDate ON clinic.Appointments(VisitDate);</code></pre>
+
+      <h3>2.3 Prompts (Copilot) — Modelado asistido</h3>
+      <pre><button class="copy" onclick="copy('p3')">Copiar</button><code id="p3">Create a join query that returns the next 10 upcoming appointments with owner and pet details.
+Include columns: AppointmentId, VisitDate, PetName, Species, OwnerName, Phone, Status.</code></pre>
+      <pre><button class="copy" onclick="copy('p4')">Copiar</button><code id="p4">Suggest additional indexes to optimize typical filters by VisitDate range, OwnerId, and Status.
+Explain trade-offs briefly.</code></pre>
+    </section>
+
+    <section id="seed" class="card">
+      <h2>3. Seed & consultas (3’)</h2>
+      <h3>3.1 Datos de prueba mínimos</h3>
+      <pre><button class="copy" onclick="copy('sql3')">Copiar</button><code id="sql3">-- 02-seed.sql
+USE PetClinicAI;
+GO
+
+INSERT INTO clinic.Owners (FullName, Email, Phone)
+VALUES (N'Ana López', N'ana@example.com', N'+502 5555-1001'),
+       (N'Carlos Méndez', N'carlos@example.com', N'+502 5555-1002');
+
+INSERT INTO clinic.Pets (OwnerId, PetName, Species, Breed, BirthDate, IsNeutered)
+VALUES (1, N'Bobby', N'Dog', N'Labrador', '2021-04-01', 1),
+       (1, N'Mishi', N'Cat',  N'Siamese',  '2022-09-10', 0),
+       (2, N'Rex',   N'Dog',  N'Mixed',    '2020-12-25', 1);
+
+INSERT INTO clinic.Appointments (PetId, VisitDate, Reason, Notes, Status)
+VALUES (1, DATEADD(day, 1, SYSUTCDATETIME()), N'Vacunación',       NULL, N'Scheduled'),
+       (2, DATEADD(day, 2, SYSUTCDATETIME()), N'Control general',  NULL, N'Scheduled'),
+       (3, DATEADD(day,-1, SYSUTCDATETIME()), N'Chequeo post-op',  N'Todo bien', N'Completed');</code></pre>
+
+      <h3>3.2 Consulta útil (próximas citas)</h3>
+      <pre><button class="copy" onclick="copy('sql4')">Copiar</button><code id="sql4">SELECT TOP (10)
+  a.AppointmentId, a.VisitDate, a.Status,
+  p.PetName, p.Species,
+  o.FullName AS OwnerName, o.Phone
+FROM clinic.Appointments a
+JOIN clinic.Pets p   ON p.PetId = a.PetId
+JOIN clinic.Owners o ON o.OwnerId = p.OwnerId
+WHERE a.VisitDate >= SYSUTCDATETIME()
+ORDER BY a.VisitDate ASC;</code></pre>
+    </section>
+
+    <section id="api" class="card">
+      <h2>4. Backend .NET Minimal API (9’)</h2>
+      <p>API sencilla con <strong>Dapper</strong> para ir rápido. Endpoints clave: listar próximas citas, crear dueños/mascotas.</p>
+
+      <h3>4.1 Comandos de arranque</h3>
+      <pre><button class="copy" onclick="copy('sh1')">Copiar</button><code id="sh1">dotnet new web -n PetClinicApi
+cd PetClinicApi
+dotnet add package Dapper
+dotnet add package System.Data.SqlClient</code></pre>
+
+      <h3>4.2 <code>Program.cs</code></h3>
+      <pre><button class="copy" onclick="copy('cs1')">Copiar</button><code id="cs1">// Program.cs
+using System.Data;
+using System.Data.SqlClient;
+using Dapper;
+
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+
+string? connStr = Environment.GetEnvironmentVariable("ConnectionStrings__Default")
+                  ?? builder.Configuration.GetConnectionString("Default")
+                  ?? "Server=localhost;Database=PetClinicAI;Trusted_Connection=True;TrustServerCertificate=True";
+
+app.MapGet("/api/appointments/upcoming", async () =>
+{
+    using var db = new SqlConnection(connStr);
+    var sql = @"
+    SELECT TOP (10)
+      a.AppointmentId, a.VisitDate, a.Status,
+      p.PetName, p.Species,
+      o.FullName AS OwnerName, o.Phone
+    FROM clinic.Appointments a
+    JOIN clinic.Pets p   ON p.PetId = a.PetId
+    JOIN clinic.Owners o ON o.OwnerId = p.OwnerId
+    WHERE a.VisitDate >= SYSUTCDATETIME()
+    ORDER BY a.VisitDate ASC;";
+    var rows = await db.QueryAsync(sql);
+    return Results.Ok(rows);
+});
+
+app.MapPost("/api/owners", async (Owner owner) =>
+{
+    using var db = new SqlConnection(connStr);
+    var id = await db.ExecuteScalarAsync<int>(@"
+      INSERT INTO clinic.Owners (FullName, Email, Phone) 
+      OUTPUT INSERTED.OwnerId
+      VALUES (@FullName, @Email, @Phone);", owner);
+    return Results.Created($"/api/owners/{id}", new { OwnerId = id });
+});
+
+app.MapPost("/api/pets", async (Pet pet) =>
+{
+    using var db = new SqlConnection(connStr);
+    var id = await db.ExecuteScalarAsync<int>(@"
+      INSERT INTO clinic.Pets (OwnerId, PetName, Species, Breed, BirthDate, IsNeutered) 
+      OUTPUT INSERTED.PetId
+      VALUES (@OwnerId, @PetName, @Species, @Breed, @BirthDate, @IsNeutered);", pet);
+    return Results.Created($"/api/pets/{id}", new { PetId = id });
+});
+
+app.Run();
+
+record Owner(string FullName, string? Email, string? Phone);
+record Pet(int OwnerId, string PetName, string Species, string? Breed, DateTime? BirthDate, bool IsNeutered);</code></pre>
+
+      <h3>4.3 <code>appsettings.json</code> (opcional)</h3>
+      <pre><button class="copy" onclick="copy('json1')">Copiar</button><code id="json1">{
+  "ConnectionStrings": {
+    "Default": "Server=localhost;Database=PetClinicAI;Trusted_Connection=True;TrustServerCertificate=True"
+  }
+}</code></pre>
+
+      <h3>4.4 Ejecutar</h3>
+      <pre><button class="copy" onclick="copy('sh2')">Copiar</button><code id="sh2">dotnet run
+# API escuchando, toma nota de la URL (por ejemplo http://localhost:5189)</code></pre>
+
+      <h3>4.5 Prompts (Copilot) — Endpoints extra</h3>
+      <pre><button class="copy" onclick="copy('p5')">Copiar</button><code id="p5">Create a GET /api/owners/{id} endpoint that returns the owner with their pets (array) using a single SQL query.</code></pre>
+      <pre><button class="copy" onclick="copy('p6')">Copiar</button><code id="p6">Add basic validation for POST /api/pets (species whitelist, name length) and return 400 with details if invalid.</code></pre>
+    </section>
+
+    <section id="ui" class="card">
+      <h2>5. Frontend React (6’)</h2>
+      <p>Vite + fetch simple para mostrar próximas citas. Configuramos un <strong>proxy</strong> a la API para evitar CORS.</p>
+
+      <h3>5.1 Crear proyecto</h3>
+      <pre><button class="copy" onclick="copy('sh3')">Copiar</button><code id="sh3">npm create vite@latest petclinic-ui -- --template react
+cd petclinic-ui
+npm i
+npm i -D @types/node
+</code></pre>
+
+      <h3>5.2 <code>vite.config.js</code> (proxy)</h3>
+      <pre><button class="copy" onclick="copy('js1')">Copiar</button><code id="js1">import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      '/api': 'http://localhost:5189' // Ajusta al puerto real de tu API
+    }
+  }
+})</code></pre>
+
+      <h3>5.3 <code>src/App.jsx</code></h3>
+      <pre><button class="copy" onclick="copy('jsx1')">Copiar</button><code id="jsx1">import { useEffect, useState } from 'react'
+
+export default function App() {
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    fetch('/api/appointments/upcoming')
+      .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+      .then(setRows)
+      .catch(e => setError(String(e)))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <p style={{padding:16}}>Cargando…</p>
+  if (error) return <p style={{padding:16,color:'#ff6b6b'}}>Error: {error}</p>
+
+  return (
+    <div style={{padding:20,fontFamily:'system-ui'}}>
+      <h2>Próximas citas</h2>
+      <table style={{borderCollapse:'collapse', width:'100%'}}>
+        <thead>
+          <tr>
+            <th style={th}>Fecha</th>
+            <th style={th}>Mascota</th>
+            <th style={th}>Especie</th>
+            <th style={th}>Dueño</th>
+            <th style={th}>Teléfono</th>
+            <th style={th}>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r,i)=>(
+            <tr key={i}>
+              <td style={td}>{new Date(r.VisitDate).toLocaleString()}</td>
+              <td style={td}>{r.PetName}</td>
+              <td style={td}>{r.Species}</td>
+              <td style={td}>{r.OwnerName}</td>
+              <td style={td}>{r.Phone}</td>
+              <td style={td}>{r.Status}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+const th = {borderBottom:'1px solid #ddd', textAlign:'left', padding:'8px'}
+const td = {borderBottom:'1px solid #222', padding:'8px'}</code></pre>
+
+      <h3>5.4 Ejecutar</h3>
+      <pre><button class="copy" onclick="copy('sh4')">Copiar</button><code id="sh4">npm run dev
+# Abre http://localhost:5173 — Deberías ver la tabla con próximas citas</code></pre>
+    </section>
+
+    <section id="bonus" class="card">
+      <h2>6. Bonus (si sobra tiempo)</h2>
+      <ul>
+        <li><strong>ORM:</strong> pedir a Copilot modelos EF Core o Sequelize a partir del esquema (quick start).</li>
+        <li><strong>Azure:</strong> publicar API en Azure App Service y DB en Azure SQL; usar secreto <em>ConnectionStrings:Default</em>.</li>
+        <li><strong>SP:</strong> crear <code>clinic.GetAppointmentsByOwner(@OwnerId)</code> y exponer endpoint <code>/api/owners/{id}/appointments</code>.</li>
+      </ul>
+      <h3>Prompt sugerido</h3>
+      <pre><button class="copy" onclick="copy('p7')">Copiar</button><code id="p7">Generate an Entity Framework Core DbContext and entity classes for the PetClinicAI schema
+(clinic.Owners, clinic.Pets, clinic.Appointments), including Fluent API constraints and relationships.</code></pre>
+    </section>
+
+    <section id="troubleshoot" class="card">
+      <h2>7. Troubleshooting rápido</h2>
+      <ul>
+        <li><strong>Login/SSL:</strong> agrega <code>TrustServerCertificate=True</code> a la cadena de conexión local.</li>
+        <li><strong>CORS:</strong> usa el <strong>proxy</strong> en Vite o habilita CORS en la API si el frontend está en otro host.</li>
+        <li><strong>Permisos:</strong> confirma que el usuario tiene <em>CREATE TABLE</em>, <em>INSERT</em>, etc.</li>
+        <li><strong>Puertos:</strong> ajusta <code>http://localhost:5189</code> al de tu API real.</li>
+      </ul>
+    </section>
+
+    <section id="takeaways" class="card">
+      <h2>8. Takeaways</h2>
+      <ul>
+        <li>La IA acelera lo repetible; tú aportas criterio y diseño.</li>
+        <li>Flujo recomendado: <strong>Explora → Modela → Seed → API → UI</strong>.</li>
+        <li>Guarda estos archivos base para rehacer demos en minutos.</li>
+      </ul>
+    </section>
+
+    <footer>
+      <p>Autor: Elvis Geovanny Batzibal · <span class="tag">Modern SQL Development con IA (Mascotas)</span></p>
+    </footer>
+  </div>
+
+  <div class="float-actions">
+    <button class="btn secondary" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ Arriba</button>
+    <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
+  </div>
+
+  <script>
+    function copy(id){
+      const el = document.getElementById(id);
+      const bytes = new Blob([el.innerText || el.textContent], {type:'text/plain'});
+      navigator.clipboard.writeText(el.innerText || el.textContent);
+      const btn = event.target;
+      const old = btn.textContent;
+      btn.textContent = "✓ Copiado";
+      setTimeout(()=>btn.textContent=old, 1200);
+    }
+  </script>
+</body>
+</html>
